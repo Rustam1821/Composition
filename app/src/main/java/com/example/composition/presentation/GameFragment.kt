@@ -6,11 +6,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import com.example.composition.R
 import com.example.composition.databinding.FragmentGameBinding
 import com.example.composition.domain.entity.GameResult
-import com.example.composition.domain.entity.GameSettings
 import com.example.composition.domain.entity.Level
+import com.example.composition.domain.entity.Question
+import java.lang.Integer.parseInt
 
 class GameFragment : Fragment() {
 
@@ -18,7 +20,11 @@ class GameFragment : Fragment() {
     private val binding: FragmentGameBinding
         get() = _binding ?: throw RuntimeException("FragmentGameBinding == null")
 
+    private lateinit var viewModel: GameViewModel
+
     private lateinit var level: Level
+
+    private var minRightAnswers = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,15 +41,13 @@ class GameFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.tvTimer.setOnClickListener {
-            launchGameFinishedFragment(
-                GameResult(
-                    true, 20, 30, GameSettings(
-                        20, 20, 100, 40
-                    )
-                )
-            )
-        }
+        viewModel = ViewModelProvider(this)[GameViewModel::class.java]
+        viewModel.getGameSettings(level)
+        viewModel.launchNextQuestion()
+
+        setUpListeners()
+        observeViewModel()
+
     }
 
     override fun onDestroyView() {
@@ -56,6 +60,57 @@ class GameFragment : Fragment() {
             level = it
         }
         Log.e("--->", "level is: $level")
+    }
+
+    private fun observeViewModel() {
+        viewModel.seconds.observe(viewLifecycleOwner) {
+            binding.tvTimer.text = it.toString()
+        }
+        viewModel.question.observe(viewLifecycleOwner) {
+            updateViews(it)
+        }
+        viewModel.rightAnswersCount.observe(viewLifecycleOwner) {
+            binding.tvAnswersProgress.text =
+                getString(R.string.progress_answers, it.toString(), minRightAnswers.toString())
+        }
+        viewModel.rightAnswersPercent.observe(viewLifecycleOwner) {
+            binding.progressBar.progress = it
+        }
+        viewModel.minRightAnswers.observe(viewLifecycleOwner) {
+            minRightAnswers = it
+            binding.tvAnswersProgress.text = getString(R.string.progress_answers, "0", it.toString())
+        }
+        viewModel.gameFinished.observe(viewLifecycleOwner) {
+            launchGameFinishedFragment(
+                it
+            )
+        }
+    }
+
+    private fun updateViews(question: Question) {
+        with(binding) {
+            val options = listOf(
+                tvOption1, tvOption2, tvOption3, tvOption4, tvOption5, tvOption6
+            )
+            tvSum.text = question.sum.toString()
+            tvLeftNumber.text = question.visibleNumber.toString()
+            options.forEachIndexed { index, textView ->
+                textView.text = question.options[index].toString()
+            }
+        }
+    }
+
+    private fun setUpListeners() {
+        with(binding) {
+            val options = listOf(
+                tvOption1, tvOption2, tvOption3, tvOption4, tvOption5, tvOption6
+            )
+            options.forEach { textView ->
+                textView.setOnClickListener {
+                    viewModel.userAnswered(parseInt(textView.text.toString()))
+                }
+            }
+        }
     }
 
     private fun launchGameFinishedFragment(gameResult: GameResult) {
