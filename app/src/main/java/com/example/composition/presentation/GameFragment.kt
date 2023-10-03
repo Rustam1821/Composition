@@ -34,7 +34,7 @@ class GameFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         _binding = FragmentGameBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -42,8 +42,7 @@ class GameFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProvider(this)[GameViewModel::class.java]
-        viewModel.getGameSettings(level)
-        viewModel.launchNextQuestion()
+        viewModel.startGame(level)
 
         setUpListeners()
         observeViewModel()
@@ -63,27 +62,20 @@ class GameFragment : Fragment() {
     }
 
     private fun observeViewModel() {
-        viewModel.seconds.observe(viewLifecycleOwner) {
-            binding.tvTimer.text = it.toString()
+        viewModel.formattedTime.observe(viewLifecycleOwner) {
+            binding.tvTimer.text = it
         }
         viewModel.question.observe(viewLifecycleOwner) {
             updateViews(it)
         }
-        viewModel.rightAnswersCount.observe(viewLifecycleOwner) {
-            binding.tvAnswersProgress.text =
-                getString(R.string.progress_answers, it.toString(), minRightAnswers.toString())
+        viewModel.progressAnswers.observe(viewLifecycleOwner) {
+            binding.tvAnswersProgress.text = it
         }
         viewModel.rightAnswersPercent.observe(viewLifecycleOwner) {
             binding.progressBar.progress = it
         }
-        viewModel.minRightAnswers.observe(viewLifecycleOwner) {
-            minRightAnswers = it
-            binding.tvAnswersProgress.text = getString(R.string.progress_answers, "0", it.toString())
-        }
-        viewModel.gameFinished.observe(viewLifecycleOwner) {
-            launchGameFinishedFragment(
-                it
-            )
+        viewModel.gameResult.observe(viewLifecycleOwner) {
+            launchGameFinishedFragment(it)
         }
     }
 
@@ -107,7 +99,7 @@ class GameFragment : Fragment() {
             )
             options.forEach { textView ->
                 textView.setOnClickListener {
-                    viewModel.userAnswered(parseInt(textView.text.toString()))
+                    viewModel.chooseAnswer(parseInt(textView.text.toString()))
                 }
             }
         }
