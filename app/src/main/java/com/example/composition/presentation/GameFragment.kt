@@ -1,10 +1,12 @@
 package com.example.composition.presentation
 
+import android.content.res.ColorStateList
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.composition.R
@@ -12,7 +14,6 @@ import com.example.composition.databinding.FragmentGameBinding
 import com.example.composition.domain.entity.GameResult
 import com.example.composition.domain.entity.Level
 import com.example.composition.domain.entity.Question
-import java.lang.Integer.parseInt
 
 class GameFragment : Fragment() {
 
@@ -20,11 +21,22 @@ class GameFragment : Fragment() {
     private val binding: FragmentGameBinding
         get() = _binding ?: throw RuntimeException("FragmentGameBinding == null")
 
-    private lateinit var viewModel: GameViewModel
+    private val viewModel by lazy {
+        ViewModelProvider(this)[GameViewModel::class.java]
+    }
+
+    private val tvOptions by lazy {
+        mutableListOf<TextView>().apply {
+            add(binding.tvOption1)
+            add(binding.tvOption2)
+            add(binding.tvOption3)
+            add(binding.tvOption4)
+            add(binding.tvOption5)
+            add(binding.tvOption6)
+        }
+    }
 
     private lateinit var level: Level
-
-    private var minRightAnswers = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,12 +53,9 @@ class GameFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel = ViewModelProvider(this)[GameViewModel::class.java]
-        viewModel.startGame(level)
-
-        setUpListeners()
         observeViewModel()
-
+        viewModel.startGame(level)
+        setUpClickListeners()
     }
 
     override fun onDestroyView() {
@@ -58,7 +67,6 @@ class GameFragment : Fragment() {
         requireArguments().getParcelable<Level>(KEY_LEVEL)?.let {
             level = it
         }
-        Log.e("--->", "level is: $level")
     }
 
     private fun observeViewModel() {
@@ -66,41 +74,50 @@ class GameFragment : Fragment() {
             binding.tvTimer.text = it
         }
         viewModel.question.observe(viewLifecycleOwner) {
-            updateViews(it)
+            updateQuestionViews(it)
+        }
+        viewModel.rightAnswersPercent.observe(viewLifecycleOwner) {
+            binding.progressBar.setProgress(it, true)
+        }
+        viewModel.enoughCount.observe(viewLifecycleOwner) {
+            val color = getColorByState(it)
+            binding.tvAnswersProgress.setTextColor(color)
+        }
+        viewModel.enoughPercent.observe(viewLifecycleOwner) {
+            val color = getColorByState(it)
+            binding.progressBar.progressTintList = ColorStateList.valueOf(color)
+        }
+        viewModel.minPercent.observe(viewLifecycleOwner) {
+            binding.progressBar.secondaryProgress = it
         }
         viewModel.progressAnswers.observe(viewLifecycleOwner) {
             binding.tvAnswersProgress.text = it
-        }
-        viewModel.rightAnswersPercent.observe(viewLifecycleOwner) {
-            binding.progressBar.progress = it
         }
         viewModel.gameResult.observe(viewLifecycleOwner) {
             launchGameFinishedFragment(it)
         }
     }
 
-    private fun updateViews(question: Question) {
+    private fun getColorByState(goodState: Boolean): Int {
+        val colorId = if (goodState) android.R.color.holo_green_light else android.R.color.holo_red_light
+        return ContextCompat.getColor(requireContext(), colorId)
+    }
+
+    private fun updateQuestionViews(question: Question) {
         with(binding) {
-            val options = listOf(
-                tvOption1, tvOption2, tvOption3, tvOption4, tvOption5, tvOption6
-            )
             tvSum.text = question.sum.toString()
             tvLeftNumber.text = question.visibleNumber.toString()
-            options.forEachIndexed { index, textView ->
+
+            tvOptions.forEachIndexed { index, textView ->
                 textView.text = question.options[index].toString()
             }
         }
     }
 
-    private fun setUpListeners() {
-        with(binding) {
-            val options = listOf(
-                tvOption1, tvOption2, tvOption3, tvOption4, tvOption5, tvOption6
-            )
-            options.forEach { textView ->
-                textView.setOnClickListener {
-                    viewModel.chooseAnswer(parseInt(textView.text.toString()))
-                }
+    private fun setUpClickListeners() {
+        tvOptions.forEach { textView ->
+            textView.setOnClickListener {
+                viewModel.chooseAnswer(textView.text.toString().toInt())
             }
         }
     }
