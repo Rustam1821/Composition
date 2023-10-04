@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+import com.example.composition.R
 import com.example.composition.databinding.FragmentGameFinishedBinding
 import com.example.composition.domain.entity.GameResult
 
@@ -34,7 +35,33 @@ class GameFinishedFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setUpClickListeners()
+        bindViews()
+    }
 
+    private fun bindViews() {
+        with(binding) {
+            emojiResult.setImageResource(getSmileResId())
+            tvRequiredAnswers.text = String.format(
+                getString(R.string.required_score), gameResult.gameSettings.rightAnswersMinCount
+            )
+            tvScoreAnswers.text = String.format(
+                getString(R.string.score_answers), gameResult.rightAnswersCount
+            )
+            tvRequiredPercentage.text = String.format(
+                getString(R.string.required_percentage), gameResult.gameSettings.rightAnswersMinPercent
+            )
+            tvScorePercentage.text = String.format(
+                getString(R.string.score_percentage), gameResult.rightAnswerPercent
+            )
+        }
+    }
+
+    private fun getSmileResId(): Int {
+        return if (gameResult.winner) R.drawable.ic_smile else R.drawable.ic_sad
+    }
+
+    private fun setUpClickListeners() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 retryGame()
