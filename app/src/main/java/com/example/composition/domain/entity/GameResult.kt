@@ -11,5 +11,4 @@ data class GameResult(
     val gameSettings: GameSettings,
 ) : Parcelable {
     val rightAnswerPercent = (rightAnswersCount.toFloat() / questionsCount * 100).toInt()
-    val rightAnswersCountString = rightAnswersCount.toString()
 }
