@@ -29,30 +29,7 @@ class GameFinishedFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setUpClickListeners()
-        bindViews()
-    }
-
-    private fun bindViews() {
-        with(binding) {
-            gameResult = args.gameResult
-            emojiResult.setImageResource(getSmileResId())
-//            tvRequiredAnswers.text = String.format(
-//                getString(R.string.required_score), args.gameResult.gameSettings.rightAnswersMinCount
-//            )
-//            tvScoreAnswers.text = String.format(
-//                getString(R.string.score_answers), args.gameResult.rightAnswersCount
-//            )
-//            tvRequiredPercentage.text = String.format(
-//                getString(R.string.required_percentage), args.gameResult.gameSettings.rightAnswersMinPercent
-//            )
-            tvScorePercentage.text = String.format(
-                getString(R.string.score_percentage), args.gameResult.rightAnswerPercent
-            )
-        }
-    }
-
-    private fun getSmileResId(): Int {
-        return if (args.gameResult.winner) R.drawable.ic_smile else R.drawable.ic_sad
+        binding.gameResult = args.gameResult
     }
 
     private fun setUpClickListeners() {
